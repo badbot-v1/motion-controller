@@ -1,0 +1,5 @@
+fuse: 
+  log_level: 0 #0=trace, 1=debug, 2=info, 3=warn, 4=err
+  log_format: '%H:%M:%S.%e|%20!n|%^%L%$|%5t| %v'
+  mount_ang_diff: -0.209439585043612
+  

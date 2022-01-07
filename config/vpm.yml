@@ -1,0 +1,46 @@
+logging:
+  #https://github.com/gabime/spdlog/pull/622/files
+  #define SPDLOG_LEVEL_NAMES { "trace", "debug", "info", "warning", "error", "critical", "off" }
+  log_level: trace
+  log_format: '%H:%M:%S.%e|%20!n|%^%L%$|%5t| %v'
+  console_logger_enabled: true
+
+internal_messaging:
+  subscriptionAddress: tcp://127.0.0.1:50000
+  publishingAddress: tcp://127.0.0.1:50010
+  subscriberBinds: false
+
+appsink:
+  #pipeline: 'v4l2src device=/dev/video0 ! image/jpeg,framerate=30/1,width=1280,height=720 ! jpegparse ! jpegdec ! videoscale ! video/x-raw,width=640,height=480 ! videoconvert ! video/x-raw,width=640,height=480,format=BGR,framerate=30/1 ! appsink drop=true max-buffers=1 name=appSink'
+  #pipeline: 'v4l2src device=/dev/video0 ! image/jpeg,framerate=30/1,width=1280,height=720 ! jpegparse ! jpegdec ! videoscale ! tee name=t ! queue ! videoconvert ! video/x-raw,width=640,height=480,format=BGR,framerate=30/1 ! appsink drop=true max-buffers=1 name=appSink t. ! queue ! x264enc pass=5 quantizer=25 speed-preset=6 ! video/x-h264, profile=baseline ! rtph264pay mtu=1400 pt=96 ! udpsink host=127.0.0.1 port=5000'
+  #dev machine webcam
+  pipeline: 'v4l2src device=/dev/video0 ! image/jpeg,framerate=30/1,width=640,height=480 ! jpegparse ! jpegdec ! videoscale ! tee name=t ! queue max-size-buffers=1 leaky=2 ! videoconvert ! video/x-raw,width=640,height=480,format=BGR,framerate=30/1 ! appsink drop=true max-buffers=1 name=appSink t. ! queue ! x264enc tune=zerolatency ! h264parse ! rtph264pay mtu=1400 pt=96 ! udpsink host=127.0.0.1 port=5000'
+  #todo: for nano use following encoder
+  #gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080,format=(string)NV12, framerate=(fraction)30/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! filesink location=filename_h264.mp4 -e
+  #https://forums.developer.nvidia.com/t/camera-capture-and-imx219-don-t-work/78878/2
+  height: 480
+  width: 640
+
+cnn:
+  height: 480
+  width: 640
+  enable: true
+  detection_process_frequency_ms: 100
+  opt_flow_enabled: false
+  threshold_distance_detection_mid_point: 20 #how far off detection b/w two frames can vary before we decide to ignore current detection
+  threshold_distance_detection_mid_point_reset_count: 100 #see code for docs
+  
+  #working
+  detection_config: "../dn-models/yolov3-tiny-prn.cfg"
+  detection_weights: "../dn-models/yolov3-tiny-prn.weights"
+  # detection_config: "../dn-models/yolov3-tiny_3l.cfg.txt"
+  # detection_weights: "../dn-models/yolov3-tiny_3l_last.weights"
+  #person_class_id: 1 #for yolov3-tiny-prn.cfg it's 0
+
+  #efficientnet
+  detection_config: "../dn-models/enet-coco.cfg"
+  detection_weights: "../dn-models/enetb0-imagenet_final.weights"
+
+  person_class_id: 0
+  warm_up_img: "../data/dog.jpg"
+

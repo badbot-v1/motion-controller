@@ -1,0 +1,22 @@
+cc_binary(
+    name = "vpm",
+    srcs = glob(["*.cpp","*.hpp"]),
+    deps = [
+        "//shared/gst:gstreamer-io",
+        "//shared/drawing:drawing",
+        "//shared/utils:shared-storage",
+        "//shared/log:mtlogbase",
+        "//shared/messaging:protocode",
+        "//shared/messaging:messages",
+        "//shared/system:sys",
+        "//shared/filters:kalman",
+        "@yamlcpp//:yaml-cpp",
+        "@opencv//:all",
+        "@thirdparty//:darknet",
+        "@thirdparty//:ydlidar",
+        "@thirdparty//:cxxopts",
+        "@thirdparty//:spdlog",
+    ],
+    copts = ["-fopenmp"],
+    linkopts = ["-pthread","-lz","-lgomp"],
+)

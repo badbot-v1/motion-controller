@@ -1,0 +1,75 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-fuse[debug]",
+            "type": "shell",
+            "command": "bazel",
+            "args": [
+                "build",
+                "--compilation_mode=dbg",
+                "//fuse:fuse",
+                "--define",
+                "plat=laptop",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build-vpm[debug]",
+            "type": "shell",
+            "command": "bazel",
+            "args": [
+                "build",
+                "--compilation_mode=dbg",
+                "//visual-perceiver:vpm",
+                "--define",
+                "plat=laptop",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build-fuse",
+            "type": "shell",
+            "command": "bazel",
+            "args": [
+                "build",
+                "--compilation_mode=fastbuild",
+                "//fuse:fuse",
+                "--define",
+                "plat=laptop",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "run-fuse",
+            "type": "shell",
+            "command": "${workspaceFolder}/bazel-bin/fuse/fuse",
+            "args": ["-c","./config/config.yml"]
+        },
+        {
+            "label": "build-l2i[debug]",
+            "type": "shell",
+            "command": "bazel",
+            "args": [
+                "build",
+                "--compilation_mode=dbg",
+                "//lidarexplorer:l2i",
+                "--define",
+                "plat=laptop",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+    ]
+}

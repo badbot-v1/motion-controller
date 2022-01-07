@@ -1,0 +1,88 @@
+#use following to view stream
+# gst-launch-1.0 tcpclientsrc host=nanogl port=8998 ! jpegdec ! videoconvert ! xvimagesink
+#with udp
+# gst-launch-1.0 udpsrc port=5000 ! application/x-rtp,encoding-name=H264,payload=96 ! rtph264depay ! h264parse ! queue ! avdec_h264 ! xvimagesink sync=false async=false
+#with recording
+# gst-launch-1.0 udpsrc port=5000 ! application/x-rtp,encoding-name=H264,payload=96 ! rtph264depay ! h264parse config-interval=1 ! tee name=t ! queue ! avdec_h264 ! xvimagesink sync=false async=false t. ! queue ! matroskamux ! filesink location=recording.mkv -e
+
+logging:
+  #https://github.com/gabime/spdlog/pull/622/files
+  #define SPDLOG_LEVEL_NAMES { "trace", "debug", "info", "warning", "error", "critical", "off" }
+  log_level: trace
+  log_format: '%H:%M:%S.%e|%20!n|%^%L%$|%5t| %v'
+  console_logger_enabled: true
+
+fuse:
+  visual_telemetry_enabled: false
+  follower_min_dist: 3
+  follower_max_dist: 9
+  telemetry_publish_interval_ms: 1000
+
+external_messaging:
+  subscriptionAddress: tcp://*:40000
+  publishingAddress: tcp://*:41000
+  subscriberBinds: true
+
+internal_messaging:
+  subscriptionAddress: tcp://127.0.0.1:50010
+  publishingAddress: tcp://127.0.0.1:50000
+  subscriberBinds: false
+
+lidar_x4:
+  port: /dev/ydlidar
+  maxAngle: 180
+  minAngle: -180
+  minRange: 0.01
+  maxRange: 64.0
+  mapWidth: 512
+  mapHeight: 512
+  maxDistance: 20
+  #mountDifferenceInRadians: -0.209439585043612 #(-12 deg) to accomodate for the alignment of lidar with base platform
+  #mountDifferenceInRadians: 0.20943958
+  mountDifferenceInRadians: 0.0
+  plot_points_of_interest: false
+  enabled: true
+  reported_distance_on_disable: 4 #useful for testing, when no lidar available we still report some valid distance to enable follow me controller to perform it's calcualtions
+
+
+ctrlr_followme:
+  deadzoneMin: -2
+  deadzoneMax: 2
+  correctiveMidThreshold: 5 #how far away from center before bot tries to orient itself towards the target
+  max_allowed_deviation: 25 #how far max from center target can be, see docs in code
+  distMin: 3
+  distMax: 14
+  msCalculationFrequency: 50
+  msNoUpdateDuration: 500
+
+ctrlr_teleop:
+  deadzoneMin: 5
+  obstacle_dist: 3
+  msCalculationFrequency: 50
+  msNoUpdateDuration: 500
+
+drivelineUdp:
+  motorDriverIp: "10.42.0.120"
+  motorDriverPort: 40010
+  heartbeatPort: 40020
+  telemetryFrameHeight: 512 #must match that of lidar frame
+  enabled: true
+  extraTraceEnabled: false #for extra trace logging messages
+  unhealthy_threshold_ms: 3000
+
+
+drivelineUart:
+  comPort: "/dev/ttyTHS1"
+  telemetryFrameHeight: 512 #must match that of lidar frame
+  enabled: true
+  extraTraceEnabled: false #for extra trace logging messages
+  unhealthy_threshold_ms: 3000
+
+
+sensors_imu:
+  rxip: 0.0.0.0
+  rxport: 30000
+  unhealthy_threshold_ms: 1000
+  
+sensors_gps:
+  unhealthy_threshold_ms: 1000

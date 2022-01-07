@@ -1,0 +1,3 @@
+[submodule "shared/messaging/badbot-protos"]
+	path = shared/messaging/badbot-protos
+	url = https://github.com/badbot-v1/badbot-protos

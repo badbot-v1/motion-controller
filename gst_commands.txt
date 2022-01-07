@@ -1,0 +1,64 @@
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), \
+ width=(int)1920, height=(int)1080, format=(string)NV12, \
+ framerate=(fraction)30/1' ! fakesink dump=true
+
+
+ gst-launch-1.0 nvarguscamerasrc maxperf=1 ! \
+ 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, \
+format=(string)NV12, framerate=(fraction)30/1' ! nvv4l2h264enc \
+control-rate=1 bitrate=8000000 ! 'video/x-h264, \
+ stream-format=(string)byte-stream' ! h264parse ! qtmux ! filesink \
+location=test_264.mp4 -e
+
+
+gst-launch-1.0 nvarguscamerasrc maxperf=1 ! \
+ 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, \
+format=(string)NV12, framerate=(fraction)30/1' ! nvv4l2h264enc \
+control-rate=1 bitrate=8000000 ! 'video/x-h264, \
+ stream-format=(string)byte-stream' ! h264parse \
+ ! tcpserversink host=0.0.0.0 port=8998 recover-policy=keyframe sync-method=latest-keyframe
+
+gst-launch -v tcpclientsrc host=a.b.c.d port=7001 ! decodebin ! autovideosink
+
+gst-launch-1.0 tcpclientsrc host=nanogl port=8998 ! 'video/x-h264, stream-format=(string)avc, alignment=(string)au, profile=(string)constrained-baseline, level=(string)4, width=(int)1920, height=(int)1080, pixel-aspect-ratio=(fraction)1/1, framerate=(fraction)30/1, interlace-mode=(string)progressive, colorimetry=(string)bt709, chroma-site=(string)mpeg2, chroma-format=(string)4:2:0, bit-depth-luma=(uint)8, bit-depth-chroma=(uint)8, parsed=(boolean)true, codec_data=(buffer)01424028ffe1000b67424028965403c0113f2a01000468ce3c80' ! h264parse ! avdec_h264 ! xvimagesink
+
+application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, packetization-mode=(string)1, profile-level-id=(string)424028, sprop-parameter-sets=(string)"Z0JAKJZUA8ARPyo\=\,aM48gA\=\=", payload=(int)96, ssrc=(uint)2550781407, timestamp-offset=(uint)210445977, seqnum-offset=(uint)25413, a-framerate=(string)30
+/GstPipeline:pipeline0/GstRtpH264Pay:rtph264pay0.GstPad:sink: caps = video/x-h264, stream-format=(string)avc, alignment=(string)au, profile=(string)constrained-baseline, level=(string)4, width=(int)1920, height=(int)1080, pixel-aspect-ratio=(fraction)1/1, framerate=(fraction)30/1, interlace-mode=(string)progressive, colorimetry=(string)bt709, chroma-site=(string)mpeg2, chroma-format=(string)4:2:0, bit-depth-luma=(uint)8, bit-depth-chroma=(uint)8, parsed=(boolean)true, codec_data=(buffer)01424028ffe1000b67424028965403c0113f2a01000468ce3c80
+
+
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1920, height=1080, framerate=30/1' ! omxh264enc control-rate=2 bitrate=4000000 ! video/x-h264, stream-format=byte-stream ! rtph264pay mtu=1400 ! tcpserversink host=0.0.0.0 port=8998 sync=false async=false -v
+gst-launch-1.0 tcpclientsrc host=nanogl port=8998 ! 'application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, packetization-mode=(string)1, sprop-parameter-sets=(string)"Z0JAKJWgHgCJ+VA\=\,aM48gA\=\=", payload=(int)96, seqnum-offset=(uint)4918, timestamp-offset=(uint)1356584436, ssrc=(uint)738955684, a-framerate=(string)30' ! rtph264depay ! h264parse ! queue ! avdec_h264 ! xvimagesink
+gst-launch-1.0 tcpclientsrc host=nanogl port=8998 ! fakesink dump=true
+gst-launch-1.0 tcpclientsrc host=nanogl port=8998 ! decodebin ! autovideosink
+
+
+
+gst-launch-1.0 udpsrc port=5000 ! application/x-rtp,encoding-name=H264,payload=96 ! rtph264depay ! h264parse ! queue ! avdec_h264 ! xvimagesink sync=false async=false
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! omxh264enc control-rate=1 preset-level=0 ! video/x-h264, stream-format=byte-stream ! rtph264pay mtu=1400 ! udpsink host=192.168.20.179 port=5000 sync=false async=false
+
+gst-launch-1.0 udpsrc address=239.10.1.2 port=5000 multicast-iface=wlx983f9f182499 ! application/x-rtp,encoding-name=H264,payload=96 ! rtph264depay ! h264parse ! queue ! avdec_h264 ! xvimagesink sync=false async=false -
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1920, height=1080, framerate=30/1' ! omxh264enc control-rate=2 bitrate=4000000 ! video/x-h264, stream-format=byte-stream ! rtph264pay mtu=1400 ! udpsink host=239.10.1.2 port=5000 sync=false async=false
+
+
+gst-launch-1.0 tcpclientsrc host=nanogl port=8998 ! h264parse ! queue ! avdec_h264 ! xvimagesink sync=false async=false
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! omxh264enc control-rate=2 bitrate=4000000 ! video/x-h264, stream-format=byte-stream ! tcpserversink host=0.0.0.0 port=8998 sync=false async=false recover-policy=keyframe sync-method=latest-keyframe
+gst-launch-1.0 nvarguscamerasrc ! queue leaky=1 ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! omxh264enc control-rate=1 ! video/x-h264, stream-format=byte-stream ! tcpserversink host=0.0.0.0 port=8998 sync=false async=false recover-policy=keyframe sync-method=latest-keyframe
+
+
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! nvjpegenc ! filesink location=test.jpg -e
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! nvvidconv ! 'video/x-raw, format=(string)BGRx' ! avenc_png ! filesink location=test.png -e
+
+#nano app sink
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! nvvidconv ! 'video/x-raw, format=(string)BGRx' ! videoconvert ! 'video/x-raw,width=640,height=480,format=BGR' ! appsink drop=true max-buffers=1 name=appSink
+nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! nvvidconv ! 'video/x-raw, format=(string)BGRx' ! videoconvert ! 'video/x-raw,width=640,height=480,format=BGR' ! appsink drop=true max-buffers=1 name=appSink
+
+
+
+#encoding for nano
+'appsrc name=appSrc is-live=1 stream-type=0 format=time caps="video/x-raw,format=BGR,width=1280,height=512,framerate=0/1" ! videoconvert ! 'video/x-raw,width=640,height=480,format=BGRx' ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! ! omxh264enc control-rate=2 bitrate=4000000 ! video/x-h264, stream-format=byte-stream ! rtph264pay mtu=1400 ! udpsink host=192.168.20.179 port=5000 sync=false async=false'
+'video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1' ! omxh264enc control-rate=2 bitrate=4000000 ! video/x-h264, stream-format=byte-stream ! rtph264pay mtu=1400 ! udpsink host=192.168.20.179 port=5000 sync=false async=false
+
+
+#test pipleline
+gst-launch-1.0  nvarguscamerasrc ! 'video/x-raw(memory:NVMM),width=1280,height=720,framerate=30/1' ! nvvidconv ! 'video/x-raw,format=(string)BGRx' ! videoconvert ! video/x-raw,width=640,height=480,format=BGR ! videoconvert ! 'video/x-raw,width=640,height=480,format=BGRx' ! nvvidconv ! 'video/x-raw(memory:NVMM)' ! omxh264enc control-rate=2 bitrate=4000000 ! 'video/x-h264,stream-format=byte-stream' ! rtph264pay mtu=1400 ! udpsink host=192.168.20.179 port=5000 sync=false async=false
+gst-launch-1.0  nvarguscamerasrc ! video/x-raw(memory:NVMM),width=1280,height=720,framerate=30/1 ! nvvidconv ! video/x-raw,format=(string)BGRx ! videoconvert ! video/x-raw,width=640,height=480,format=BGR ! videoconvert ! video/x-raw,width=640,height=480,format=BGRx ! nvvidconv ! video/x-raw(memory:NVMM) ! omxh264enc control-rate=2 bitrate=4000000 ! video/x-h264,stream-format=byte-stream ! rtph264pay mtu=1400 ! udpsink host=192.168.20.179 port=5000 sync=false async=false
